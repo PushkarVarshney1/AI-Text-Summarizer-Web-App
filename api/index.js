@@ -103,6 +103,14 @@ app.post("/api/summarize", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Distill backend running at http://localhost:${PORT}`);
+});
+
+server.on("error", (err) => {
+  if (err && err.code === "EADDRINUSE") {
+    console.error(`Port ${PORT} already in use. Set a different PORT or stop the process using it.`);
+    process.exit(1);
+  }
+  throw err;
 });
