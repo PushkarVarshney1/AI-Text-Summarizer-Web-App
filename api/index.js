@@ -22,7 +22,7 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function callGeminiWithRetry(url, options, maxAttempts = 4) {
+async function callGeminiWithRetry(url, options, maxAttempts = 6) {
   let lastError;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const response = await fetch(url, options);
@@ -34,7 +34,12 @@ async function callGeminiWithRetry(url, options, maxAttempts = 4) {
 
     const details = await response.text().catch(() => "");
     lastError = details;
-    const waitMs = 500 * 2 ** (attempt - 1); // 500ms, 1s, 2s, 4s...
+    // exponential backoff with a larger base and a cap, plus some jitter
+    const base = 1000; // 1s base
+    const cap = 16000; // 16s max
+    const exponential = Math.min(cap, base * 2 ** (attempt - 1));
+    const jitter = Math.floor(Math.random() * 300); // small random jitter
+    const waitMs = exponential + jitter;
     console.warn(
       `Gemini ${response.status}, retrying attempt ${attempt + 1}/${maxAttempts} in ${waitMs}ms...`
     );
